@@ -1,0 +1,108 @@
+[build-system]
+requires = ["setuptools>=67.4.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "staging"
+version = "0.0.1"
+authors = [
+    { name="Radoslaw Gryta", email="radek.gryta@gmail.com" },
+]
+description = "Execute pipeline stages and steps"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["CI", "CD", "stage", "step", "pipeline", "workflow", "automation", "orchestration", "execution", "staging"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = ["tomlkit", "dataclass-wizard"]
+dynamic = ["optional-dependencies"]
+
+[project.urls]
+"Homepage" = "https://github.com/rgryta/Staging"
+"Bug Tracker" = "https://github.com/rgryta/Staging/issues"
+
+[project.scripts]
+staging = "staging:main"
+
+####### SETUPTOOLS #######
+
+[tool.setuptools.package-dir]
+staging = "staging"
+
+[tool.setuptools.dynamic]
+optional-dependencies = { dev = {file = ["requirements_dev.txt"]} }
+
+####### BUMPV #######
+
+[tool.bumpversion]
+current_version = "0.0.0"
+allow_dirty = true
+commit = true
+message = "[Version {new_version}]"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+####### BLACK #######
+
+[tool.black]
+line-length = 120
+preview = true
+
+####### COVERAGE #######
+
+[tool.coverage.run]
+source = ["staging/"]
+
+####### ISORT #######
+
+[tool.isort]
+profile = "black"
+line_length = 120
+length_sort = true
+atomic = true
+
+####### PYLINT #######
+
+[tool.pylint.main]
+disable = ["logging-fstring-interpolation"]
+output-format = "colorized"
+
+[tool.pylint.format]
+max-line-length = 120
+
+
+####### STAGING #######
+[tool.staging.steps]
+# Prepare
+package = { execute = "toml get --toml-path pyproject.toml project.name | tr '-' '_' | tr -d '\n'", output = "package" }
+# Clean
+clean = { execute = "rm -rf build dist staging.egg-info && exit 1" }
+# Lint
+isort = { execute = "isort {flags} .", format = {flags = "flags"}}
+black = { execute = "black {flags} .", format = {flags = "flags"}}
+pylint = { execute = "pylint {package} tests", format = {package = "package"}}
+noprint = { execute = "noprint -ve {package} tests", format = {package = "package"}}
+# Test
+coverage = { prepare = "coverage run -m pytest -xv tests", execute = "coverage report -m --fail-under=30", cleanup = "coverage erase"}
+
+[tool.staging.stages.test]
+description = "Test the package"
+format = {flags="--check"}
+steps = [
+    {parallel = {steps = ["clean", "package"]}, continue_on_failure = true},
+    {parallel = {steps = ["isort", "black", "pylint", "noprint", "coverage"]}},
+]
+
+[tool.staging.stages.format]
+description = "Format the package"
+steps = [
+    {step = "clean", continue_on_failure = true},
+    {step = "isort", continue_on_failure = true},
+    {step = "black", continue_on_failure = true},
+]
