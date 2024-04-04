@@ -2,7 +2,7 @@
 This module contains the configuration for the application.
 """
 
-import logging
+from .logger import logger
 
 CONFIG = {}
 
@@ -22,7 +22,7 @@ def set_format(formatter: str, value: str):
     """
     if "formatter" not in CONFIG:
         CONFIG["formatter"] = {}
-    logging.info(f"Setting formatter [{formatter}] to [{value}]")
+    logger.debug(f"Setting formatter [{formatter}] to [{value}]")
     CONFIG["formatter"][formatter] = value
 
 
@@ -30,5 +30,5 @@ def clear():
     """
     Clear the configuration
     """
-    logging.info("Clearing the configuration")
+    logger.debug("Clearing the configuration")
     CONFIG.clear()

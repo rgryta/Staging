@@ -8,6 +8,7 @@ from asyncio import Task
 from dataclasses import field, dataclass
 
 from .step import Step
+from .logger import logger
 from .executable import Executable
 
 
@@ -34,6 +35,7 @@ class Parallel(Executable):
                 for exc in eg.exceptions  # pylint:disable=no-member
                 if not isinstance(exc, asyncio.CancelledError)  # Ignore cancellations
             ]
-            for exception in exceptions:
-                logging.error(f"Exception happened: {exception}")
-            raise Exception("Parallel steps failed") from exceptions[0]
+            if logger.level <= logging.INFO:
+                for exception in exceptions:
+                    logger.error(f"Exception happened: {exception}")
+            raise Exception("Parallel steps failed") from exceptions[0]  # pylint:disable=broad-exception-raised

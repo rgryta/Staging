@@ -12,11 +12,9 @@ from tomlkit import parse
 
 from .stage import Stage
 from .config import clear, get_format, set_format
+from .logger import logger, setup_logger
 
 STAGING = {"steps": {}, "stages": {}}
-
-
-logging.getLogger().setLevel(logging.INFO)
 
 
 def _parse_toml():
@@ -31,6 +29,7 @@ def _parse_toml():
 def _parse_args() -> argparse.Namespace:  # pragma: no cover
     parser = argparse.ArgumentParser(description="Execute stage of the pipeline.")
     parser.add_argument("stage", nargs="+", type=str, choices=set(STAGING["stages"]), help="name stages to execute")
+    parser.add_argument("-v", "--verbose", action="count", default=0, help="increase output verbosity")
     args = parser.parse_args()
     return args
 
@@ -38,10 +37,18 @@ def _parse_args() -> argparse.Namespace:  # pragma: no cover
 async def _main() -> None:  # pragma: no cover
     _parse_toml()
     args = _parse_args()
+    match args.verbose:
+        case 0:
+            setup_logger()
+        case 1:
+            setup_logger(level=logging.INFO)
+        case 2:
+            setup_logger(level=logging.DEBUG)
+        case _:
+            setup_logger(level=logging.NOTSET)
 
     stages = []
     for stage in args.stage:
-        clear()
         stage_info = STAGING["stages"][stage]
 
         steps = []
@@ -61,18 +68,26 @@ async def _main() -> None:  # pragma: no cover
                     parallel_steps.append(STAGING["steps"][parallel_step])
                 steps.append({"key": "Parallel", "steps": parallel_steps, "continue_on_failure": continue_on_failure})
 
+        formatter = {}
         for k, v in stage_info.get("format", {}).items():
-            set_format(k, v)
+            formatter[k] = v
 
-        stages.append(Stage.from_dict({"name": stage, "description": stage_info.get("description"), "steps": steps}))
+        stages.append(
+            Stage.from_dict(
+                {"name": stage, "description": stage_info.get("description"), "steps": steps, "formatter": formatter}
+            )
+        )
     for stage in stages:
+        clear()
         try:
+            for k, v in stage.formatter.items():
+                set_format(k, v)
             await stage.run()
         except Exception as e:  # pylint:disable=broad-except
-            logging.error(f"Error in stage [{stage}]: {e}")
-            logging.info(f"[Staging {stage}] Finishing with error")
+            logger.error(f"Error in stage [{stage.name}]: {e}")
+            logger.info(f"[Stage {{{stage.name}}}] Finishing with error")
             sys.exit(1)
-        logging.info(f"[Staging {stage}] Finishing with success")
+        logger.info(f"[Stage {{{stage.name}}}] Finishing with success")
 
 
 def main():  # pragma: no cover
