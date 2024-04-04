@@ -39,6 +39,7 @@ async def _main() -> None:  # pragma: no cover
     _parse_toml()
     args = _parse_args()
 
+    stages = []
     for stage in args.stage:
         clear()
         stage_info = STAGING["stages"][stage]
@@ -63,9 +64,10 @@ async def _main() -> None:  # pragma: no cover
         for k, v in stage_info.get("format", {}).items():
             set_format(k, v)
 
-        stage_to_run = Stage.from_dict({"name": stage, "description": stage_info.get("description"), "steps": steps})
+        stages.append(Stage.from_dict({"name": stage, "description": stage_info.get("description"), "steps": steps}))
+    for stage in stages:
         try:
-            await stage_to_run.run()
+            await stage.run()
         except Exception as e:  # pylint:disable=broad-except
             logging.error(f"Error in stage [{stage}]: {e}")
             logging.info(f"[Staging {stage}] Finishing with error")
