@@ -82,10 +82,10 @@ max-line-length = 120
 # Prepare
 package = { execute = "toml get --toml-path pyproject.toml project.name | tr '-' '_' | tr -d '\n'", output = "package" }
 # Clean
-clean = { execute = "rm -rf build dist staging.egg-info && exit 1" }
+clean = { execute = "rm -rf build dist staging.egg-info" }
 # Lint
-isort = { execute = "isort {flags} .", format = {flags = "flags"}}
-black = { execute = "black {flags} .", format = {flags = "flags"}}
+isort = { execute = "isort {flags} . tests", format = {flags = "flags"}}
+black = { execute = "black {flags} . tests", format = {flags = "flags"}}
 pylint = { execute = "pylint {package} tests", format = {package = "package"}}
 noprint = { execute = "noprint -ve {package} tests", format = {package = "package"}}
 # Test
