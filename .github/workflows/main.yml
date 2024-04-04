@@ -36,7 +36,7 @@ jobs:
         run: |
           isort -c .
           black --check .
-          pylint staging tests tests/packages/**/cc_one tests/packages/**/cc_two
+          pylint staging tests
           noprint -ve staging tests
       - name: Test
         run: |
