@@ -79,10 +79,6 @@ max-line-length = 120
 
 ####### STAGING #######
 [tool.staging.steps]
-# Prepare
-package = { execute = "toml get --toml-path pyproject.toml project.name | tr '-' '_' | tr -d '\n'", output = "package" }
-# Clean
-clean = { execute = "rm -rf build dist staging.egg-info" }
 # Lint
 isort = { execute = "isort {flags} . tests", format = {flags = "flags"}}
 black = { execute = "black {flags} . tests", format = {flags = "flags"}}
@@ -93,16 +89,20 @@ coverage = { prepare = "coverage run -m pytest -xv tests", execute = "coverage r
 
 [tool.staging.stages.test]
 description = "Test the package"
-format = {flags="--check"}
 steps = [
-    {parallel = {steps = ["clean", "package"]}, continue_on_failure = true},
-    {parallel = {steps = ["isort", "black", "pylint", "noprint", "coverage"]}},
+    {step = "coverage"},
 ]
 
 [tool.staging.stages.format]
-description = "Format the package"
+description = "Reformat code"
 steps = [
-    {step = "clean", continue_on_failure = true},
-    {step = "isort", continue_on_failure = true},
-    {step = "black", continue_on_failure = true},
+    {step = "isort"},
+    {step = "black"},
+]
+
+[tool.staging.stages.lint]
+description = "Check linting"
+format = {flags="--check", package="staging"}
+steps = [
+    {parallel = {steps = ["isort", "black", "pylint", "noprint"]}},
 ]
