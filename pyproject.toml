@@ -78,6 +78,7 @@ max-line-length = 120
 
 
 ####### STAGING #######
+
 [tool.staging.steps]
 # Lint
 isort = { execute = "isort {flags} . tests", format = {flags = "flags"}}
